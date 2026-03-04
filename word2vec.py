@@ -1,6 +1,6 @@
 """
 Word2Vec — Skip-Gram with Negative Sampling (SGNS)
-Pure NumPy implementation · Dataset: WikiText-2
+Pure NumPy implementation - Dataset: WikiText-2
 
 JetBrains Internship Task #1
 """
@@ -19,7 +19,7 @@ import numpy as np
 # ──────────────────────────────────────────────
 
 def load_wikitext2():
-    """Download WikiText-2 via HuggingFace `datasets` and return raw text lines."""
+    """Download WikiText-2 via HuggingFace datasets and return raw text lines."""
     from datasets import load_dataset
     ds = load_dataset("wikitext", "wikitext-2-raw-v1")
     lines = []
