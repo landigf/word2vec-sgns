@@ -149,33 +149,23 @@ def sgns_step(center_id, context_id, neg_ids, W, C, lr):
     ----
     L = log σ(c_pos · w) + Σ_k log σ(−c_neg_k · w)
 
-    We MAXIMISE L, which is equivalent to gradient **ascent**,
-    so the update rule is  θ ← θ + lr · ∂L/∂θ.
+    We MAXIMISE L via gradient ascent: θ ← θ + lr · ∂L/∂θ.
 
     Gradients
     ---------
-    Let s_pos   = c_pos · w      (scalar)
-        s_neg_k = c_neg_k · w    (scalar per neg sample)
+    Using the identities:
+        d/dx log σ(x)  = 1 − σ(x)
+        d/dx log σ(−x) = −σ(x)
 
-    δ_pos   = σ(s_pos) − 1       (always ≤ 0)
-    δ_neg_k = σ(s_neg_k)         (always ≥ 0)
+    Let s_pos = c_pos · w,  s_neg_k = c_neg_k · w.  Then:
 
-    ∂L/∂w        = δ_pos · c_pos   + Σ_k  δ_neg_k · c_neg_k   (sign already correct for ascent)
-        Wait — let's be precise. We want to MAXIMISE L.
-        ∂L/∂w = (1-σ(s_pos))·c_pos + Σ_k (-σ(s_neg_k))·c_neg_k
-
-    Actually let me re-derive carefully:
-        d/dx log σ(x) = 1 - σ(x)
-        d/dx log σ(-x) = d/dx log(1-σ(x)) = -σ(x)
-
-    So:
-        ∂L/∂s_pos   = 1 - σ(s_pos)
-        ∂L/∂s_neg_k = -σ(s_neg_k)
+        ∂L/∂s_pos   = 1 − σ(s_pos)
+        ∂L/∂s_neg_k = −σ(s_neg_k)
 
     Chain rule (s = c · w):
-        ∂L/∂w     = (1-σ(s_pos))·c_pos + Σ_k (-σ(s_neg_k))·c_neg_k
-        ∂L/∂c_pos = (1-σ(s_pos))·w
-        ∂L/∂c_neg_k = -σ(s_neg_k)·w
+        ∂L/∂w       = (1−σ(s_pos)) · c_pos + Σ_k (−σ(s_neg_k)) · c_neg_k
+        ∂L/∂c_pos   = (1−σ(s_pos)) · w
+        ∂L/∂c_neg_k = −σ(s_neg_k) · w
 
     Returns the loss (scalar) for logging.
     """
