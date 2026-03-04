@@ -21,7 +21,7 @@ import numpy as np
 def load_wikitext2():
     """Download WikiText-2 via HuggingFace `datasets` and return raw text lines."""
     from datasets import load_dataset
-    ds = load_dataset("wikitext", "wikitext-2-raw-v1", trust_remote_code=True)
+    ds = load_dataset("wikitext", "wikitext-2-raw-v1")
     lines = []
     for split in ("train", "validation", "test"):
         for row in ds[split]:
@@ -288,11 +288,17 @@ def normalize_rows(M):
 
 
 def most_similar(word, W, word2idx, idx2word, topn=10):
-    """Return the topn most similar words by cosine similarity."""
+    """Return the topn most similar words by cosine similarity.
+
+    Embeddings are mean-centred before normalisation — this removes
+    the dominant shared direction and produces much more
+    discriminative cosine similarities.
+    """
     if word not in word2idx:
         print(f"'{word}' not in vocabulary")
         return []
-    W_norm = normalize_rows(W)
+    W_centered = W - W.mean(axis=0)                # mean-centre
+    W_norm = normalize_rows(W_centered)
     vec = W_norm[word2idx[word]]
     sims = W_norm @ vec                            # (V,)
     # exclude the query word itself
@@ -311,7 +317,8 @@ def analogy(a, b, c, W, word2idx, idx2word, topn=5):
         if w not in word2idx:
             print(f"'{w}' not in vocabulary")
             return []
-    W_norm = normalize_rows(W)
+    W_centered = W - W.mean(axis=0)
+    W_norm = normalize_rows(W_centered)
     vec = W_norm[word2idx[b]] - W_norm[word2idx[a]] + W_norm[word2idx[c]]
     vec = vec / (np.linalg.norm(vec) + 1e-12)
     sims = W_norm @ vec
@@ -328,12 +335,12 @@ def main():
     # ── hyper-parameters ──
     EMBED_DIM   = 100
     WINDOW      = 5
-    K           = 5       # negative samples
+    K           = 10      # negative samples
     EPOCHS      = 5
     MIN_COUNT   = 5
     LR_START    = 0.025
     LR_MIN      = 1e-4
-    SUBSAMPLE_T = 1e-5
+    SUBSAMPLE_T = 1e-4    # less aggressive for a small dataset
 
     print("=" * 60)
     print("Word2Vec — Skip-Gram with Negative Sampling (pure NumPy)")
@@ -385,12 +392,15 @@ def main():
         pickle.dump({"W": W, "C": C, "word2idx": word2idx, "idx2word": idx2word}, f)
     print(f"\nEmbeddings saved to {save_path}")
 
+    # ── use W + C for evaluation (Levy et al., 2015) ──
+    E = W + C
+
     # ── quick evaluation ──
     print("\n" + "=" * 60)
-    print("Evaluation — Most Similar Words")
+    print("Evaluation — Most Similar Words  (embeddings = W + C, mean-centred)")
     print("=" * 60)
     for query in ("king", "computer", "water", "city", "good"):
-        results = most_similar(query, W, word2idx, idx2word, topn=8)
+        results = most_similar(query, E, word2idx, idx2word, topn=8)
         if results:
             neighbours = ", ".join(f"{w} ({s:.3f})" for w, s in results)
             print(f"  {query:>10} → {neighbours}")
@@ -402,7 +412,7 @@ def main():
         ("paris", "france", "berlin"),
     ]
     for a, b, c in analogies:
-        results = analogy(a, b, c, W, word2idx, idx2word, topn=5)
+        results = analogy(a, b, c, E, word2idx, idx2word, topn=5)
         if results:
             answers = ", ".join(f"{w} ({s:.3f})" for w, s in results)
             print(f"  {a}:{b} :: {c}:? → {answers}")
