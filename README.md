@@ -2,8 +2,6 @@
 
 Pure NumPy implementation · Dataset: WikiText-2 (via HuggingFace `datasets`)
 
-> JetBrains Internship — Task #1
-
 ---
 
 ## Quick Start
